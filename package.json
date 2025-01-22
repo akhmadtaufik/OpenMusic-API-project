@@ -3,10 +3,27 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start-prod": "NODE_ENV=production node ./src/server.js",
+    "start-dev": "nodemon ./src/server.js",
+    "lint": "eslint ./",
+    "migrate": "node-pg-migrate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "@hapi/hapi": "^21.3.12",
+    "@hapi/vision": "^7.0.3",
+    "handlebars": "^4.7.8",
+    "joi": "^17.13.3",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "eslint-config-dicodingacademy": "^0.9.4",
+    "globals": "^15.14.0",
+    "nodemon": "^3.1.9"
+  }
 }
