@@ -17,6 +17,7 @@
     "@hapi/vision": "^7.0.3",
     "handlebars": "^4.7.8",
     "joi": "^17.13.3",
+    "nanoid": "^5.0.9",
     "pg": "^8.13.1"
   },
   "devDependencies": {
