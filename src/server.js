@@ -1,20 +1,20 @@
 /* eslint-disable no-undef */
+require('dotenv').config();
+
 const Hapi = require('@hapi/hapi');
 const apiPlugin = require('./api');
 const AlbumsService = require('./service/AlbumsService');
 const SongsService = require('./service/SongsService');
-const ClientError = require('./exceptions/ClientError');
-const NotFoundError = require('./exceptions/NotFoundError');
-const InvariantError = require('./exceptions/InvariantError');
 const { AlbumsValidator, SongsValidator } = require('./validator');
+const ClientError = require('./exceptions/ClientError');
 
 const init = async () => {
   const albumsService = new AlbumsService();
   const songsService = new SongsService();
 
   const server = Hapi.server({
-    port: 3000,
-    host: process.env.NODE_ENV !== 'production' ? 'localhost' : '0.0.0.0',
+    port: process.env.PORT || 3000,
+    host: process.env.HOST || 'localhost',
     routes: {
       cors: {
         origin: ['*'],
@@ -35,6 +35,7 @@ const init = async () => {
   server.ext('onPreResponse', (request, h) => {
     const { response } = request;
 
+    // Penanganan error jika merupakan instance ClientError
     if (response instanceof ClientError) {
       const newResponse = h.response({
         status: 'fail',
@@ -44,24 +45,7 @@ const init = async () => {
       return newResponse;
     }
 
-    if (response instanceof NotFoundError) {
-      const newResponse = h.response({
-        status: 'fail',
-        message: response.message,
-      });
-      newResponse.code(404);
-      return newResponse;
-    }
-
-    if (response instanceof InvariantError) {
-      const newResponse = h.response({
-        status: 'fail',
-        message: response.message,
-      });
-      newResponse.code(400);
-      return newResponse;
-    }
-
+    // Penanganan error lainnya (bukan ClientError)
     if (response.isBoom) {
       const newResponse = h.response({
         status: 'error',
@@ -71,6 +55,7 @@ const init = async () => {
       return newResponse;
     }
 
+    // Melanjutkan response tanpa modifikasi jika tidak ada error
     return h.continue;
   });
 
