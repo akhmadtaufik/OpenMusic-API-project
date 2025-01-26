@@ -1,104 +1,145 @@
+const ClientError = require('../exceptions/ClientError');
+const NotFoundError = require('../exceptions/NotFoundError');
+
 class AlbumsHandler {
-  constructor(service) {
+  constructor(service, validator) {
     this._service = service;
+    this._validator = validator;
   }
 
-  postAlbumHandler(request, h) {
+  async postAlbumHandler(request, h) {
     try {
+      this._validator.validateAlbumPayload(request.payload);
       const { name, year } = request.payload;
 
-      const albumId = this._service.addAlbum({ name, year });
+      const albumId = await this._service.addAlbum({ name, year });
 
-      const response = h.response({
-        status: 'success',
-        data: {
-          albumId,
-        },
-      });
-      response.code(201);
-      return response;
+      return h
+        .response({
+          status: 'success',
+          data: { albumId },
+        })
+        .code(201);
     } catch (error) {
-      const response = h.response({
-        status: 'fail',
-        message: error.message,
-      });
-      response.code(400);
-      return response;
+      if (error instanceof ClientError) {
+        return h
+          .response({
+            status: 'fail',
+            message: error.message,
+          })
+          .code(400);
+      }
+
+      return h
+        .response({
+          status: 'error',
+          message: 'Server error occurred',
+        })
+        .code(500);
     }
   }
 
-  getAlbumByIdHandler(request, h) {
+  async getAlbumByIdHandler(request, h) {
     try {
       const { id } = request.params;
-      const album = this._service.getAlbumById(id);
+      const album = await this._service.getAlbumById(id);
 
       return {
         status: 'success',
-        data: {
-          album,
-        },
+        data: { album },
       };
     } catch (error) {
-      const response = h.response({
-        status: 'fail',
-        message: error.message,
-      });
-      response.code(error.statusCode || 500);
-      return response;
+      if (error instanceof NotFoundError) {
+        return h
+          .response({
+            status: 'fail',
+            message: 'Album tidak ditemukan',
+          })
+          .code(404);
+      }
+
+      return h
+        .response({
+          status: 'error',
+          message: 'Server error occurred',
+        })
+        .code(500);
     }
   }
 
-  putAlbumByIdHandler(request, h) {
+  async putAlbumByIdHandler(request, h) {
     try {
+      this._validator.validateAlbumPayload(request.payload);
       const { id } = request.params;
       const { name, year } = request.payload;
 
-      this._service.editAlbumById(id, { name, year });
+      await this._service.editAlbumById(id, { name, year });
 
       return {
         status: 'success',
         message: 'Album berhasil diperbaharui',
       };
     } catch (error) {
-      const response = h.response({
-        status: 'fail',
-        message: error.message,
-      });
-      response.code(error.statusCode || 500);
-      return response;
+      if (error instanceof ClientError) {
+        return h
+          .response({
+            status: 'fail',
+            message: error.message,
+          })
+          .code(400);
+      }
+
+      return h
+        .response({
+          status: 'error',
+          message: 'Server error occurred',
+        })
+        .code(500);
     }
   }
 
-  deleteAlbumByIdHandler(request, h) {
+  async deleteAlbumByIdHandler(request, h) {
     try {
       const { id } = request.params;
-      this._service.deleteAlbumById(id);
+      await this._service.deleteAlbumById(id);
 
       return {
         status: 'success',
         message: 'Album berhasil dihapus',
       };
     } catch (error) {
-      const response = h.response({
-        status: 'fail',
-        message: error.message,
-      });
-      response.code(error.statusCode || 500);
-      return response;
+      if (error instanceof NotFoundError) {
+        return h
+          .response({
+            status: 'fail',
+            message: 'Album tidak ditemukan',
+          })
+          .code(404);
+      }
+
+      return h
+        .response({
+          status: 'error',
+          message: 'Server error occurred',
+        })
+        .code(500);
     }
   }
 }
 
 class SongsHandler {
-  constructor(service) {
+  constructor(service, validator) {
     this._service = service;
+    this._validator = validator;
   }
 
-  postSongHandler(request, h) {
+  async postSongHandler(request, h) {
     try {
+      this._validator.validateSongPayload(request.payload); // Validasi payload
       const { title, year, genre, performer, duration, albumId } =
         request.payload;
-      const songId = this._service.addSong({
+
+      const songId = await this._service.addSong({
         title,
         year,
         genre,
@@ -107,64 +148,78 @@ class SongsHandler {
         albumId,
       });
 
-      const response = h.response({
-        status: 'success',
-        data: {
-          songId,
-        },
-      });
-      response.code(201);
-      return response;
+      return h
+        .response({
+          status: 'success',
+          data: { songId },
+        })
+        .code(201);
     } catch (error) {
-      const response = h.response({
-        status: 'fail',
-        message: error.message,
-      });
-      response.code(400);
-      return response;
+      if (error instanceof ClientError) {
+        return h
+          .response({
+            status: 'fail',
+            message: error.message,
+          })
+          .code(400); // Mengembalikan 400 untuk error validasi
+      }
+
+      // Error lainnya
+      return h
+        .response({
+          status: 'error',
+          message: 'Server error occurred',
+        })
+        .code(500);
     }
   }
 
-  getAllSongsHandler(request) {
+  async getAllSongsHandler(request) {
     const { title, performer } = request.query;
-    const songs = this._service.getSongs(title, performer);
+    const songs = await this._service.getSongs(title, performer);
 
     return {
       status: 'success',
-      data: {
-        songs,
-      },
+      data: { songs },
     };
   }
 
-  getSongByIdHandler(request, h) {
+  async getSongByIdHandler(request, h) {
     try {
       const { id } = request.params;
-      const song = this._service.getSongById(id);
+      const song = await this._service.getSongById(id);
 
       return {
         status: 'success',
-        data: {
-          song,
-        },
+        data: { song },
       };
     } catch (error) {
-      const response = h.response({
-        status: 'fail',
-        message: error.message,
-      });
-      response.code(error.statusCode || 500);
-      return response;
+      if (error instanceof NotFoundError) {
+        return h
+          .response({
+            status: 'fail',
+            message: 'Lagu tidak ditemukan',
+          })
+          .code(404);
+      }
+
+      return h
+        .response({
+          status: 'error',
+          message: 'Server error occurred',
+        })
+        .code(500);
     }
   }
 
-  putSongByIdHandler(request, h) {
+  async putSongByIdHandler(request, h) {
     try {
+      this._validator.validateSongPayload(request.payload);
       const { id } = request.params;
       const { title, year, genre, performer, duration, albumId } =
         request.payload;
 
-      this._service.editSongById(id, {
+      await this._service.editSongById(id, {
         title,
         year,
         genre,
@@ -178,31 +233,49 @@ class SongsHandler {
         message: 'Lagu berhasil diperbaharui',
       };
     } catch (error) {
-      const response = h.response({
-        status: 'fail',
-        message: error.message,
-      });
-      response.code(error.statusCode || 500);
-      return response;
+      if (error instanceof ClientError) {
+        return h
+          .response({
+            status: 'fail',
+            message: error.message,
+          })
+          .code(400);
+      }
+
+      return h
+        .response({
+          status: 'error',
+          message: 'Server error occurred',
+        })
+        .code(500);
     }
   }
 
-  deleteSongByIdHandler(request, h) {
+  async deleteSongByIdHandler(request, h) {
     try {
       const { id } = request.params;
-      this._service.deleteSongById(id);
+      await this._service.deleteSongById(id);
 
       return {
         status: 'success',
         message: 'Lagu berhasil dihapus',
       };
     } catch (error) {
-      const response = h.response({
-        status: 'fail',
-        message: error.message,
-      });
-      response.code(error.statusCode || 500);
-      return response;
+      if (error instanceof NotFoundError) {
+        return h
+          .response({
+            status: 'fail',
+            message: 'Lagu tidak ditemukan',
+          })
+          .code(404);
+      }
+
+      return h
+        .response({
+          status: 'error',
+          message: 'Server error occurred',
+        })
+        .code(500);
     }
   }
 }
