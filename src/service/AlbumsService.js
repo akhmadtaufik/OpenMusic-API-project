@@ -36,7 +36,20 @@ class AlbumsService {
       throw new NotFoundError('Album tidak ditemukan');
     }
 
-    return mapAlbumDBToModel(result.rows[0]);
+    const albumResult = result.rows[0];
+    const songsQuery = {
+      text: 'SELECT id, title, performer FROM songs WHERE "albumId" = $1',
+      values: [id],
+    };
+
+    const songsResult = await this._pool.query(songsQuery);
+    const mappedAlbum = mapAlbumDBToModel(albumResult);
+
+    // Return dengan songs array kosong jika tidak ada lagu
+    return {
+      ...mappedAlbum,
+      songs: songsResult.rows || [],
+    };
   }
 
   async editAlbumById(id, { name, year }) {
