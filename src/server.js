@@ -12,12 +12,19 @@ const songs = require('./api/songs');
 const SongsService = require('./service/SongsService');
 const SongsValidator = require('./validator/songs');
 
-// Errors
+// Users
+const users = require('./api/users');
+const UsersService = require('./service/UsersService');
+const UsersValidator = require('./validator/users');
+
+// Exceptions
 const ClientError = require('./exceptions/ClientError');
+const AuthenticationError = require('./exceptions/AuthenticationError');
 
 const init = async () => {
   const albumsService = new AlbumsService();
   const songsService = new SongsService();
+  const usersService = new UsersService();
 
   const server = Hapi.server({
     port: process.env.PORT || 3000,
@@ -44,6 +51,13 @@ const init = async () => {
         validator: SongsValidator,
       },
     },
+    {
+      plugin: users,
+      options: {
+        service: usersService,
+        validator: UsersValidator,
+      },
+    },
   ]);
 
   // Error handling dengan onPreResponse
@@ -58,6 +72,16 @@ const init = async () => {
           message: response.message,
         });
         newResponse.code(response.statusCode);
+        return newResponse;
+      }
+
+      // Handle authentication errors
+      if (response instanceof AuthenticationError) {
+        const newResponse = h.response({
+          status: 'fail',
+          message: response.message,
+        });
+        newResponse.code(401);
         return newResponse;
       }
 
