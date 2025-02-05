@@ -1,11 +1,18 @@
-/* eslint-disable no-undef */
 require('dotenv').config();
-
 const Hapi = require('@hapi/hapi');
-const apiPlugin = require('./api');
+const process = require('process');
+
+// Albums
+const albums = require('./api/albums');
 const AlbumsService = require('./service/AlbumsService');
+const AlbumsValidator = require('./validator/albums');
+
+// Songs
+const songs = require('./api/songs');
 const SongsService = require('./service/SongsService');
-const { AlbumsValidator, SongsValidator } = require('./validator');
+const SongsValidator = require('./validator/songs');
+
+// Errors
 const ClientError = require('./exceptions/ClientError');
 
 const init = async () => {
@@ -22,45 +29,65 @@ const init = async () => {
     },
   });
 
-  await server.register({
-    plugin: apiPlugin,
-    options: {
-      albumsService,
-      songsService,
-      albumsValidator: AlbumsValidator,
-      songsValidator: SongsValidator,
+  await server.register([
+    {
+      plugin: albums,
+      options: {
+        service: albumsService,
+        validator: AlbumsValidator,
+      },
     },
-  });
+    {
+      plugin: songs,
+      options: {
+        service: songsService,
+        validator: SongsValidator,
+      },
+    },
+  ]);
 
+  // Error handling dengan onPreResponse
   server.ext('onPreResponse', (request, h) => {
     const { response } = request;
 
-    // Penanganan error jika merupakan instance ClientError
-    if (response instanceof ClientError) {
-      const newResponse = h.response({
-        status: 'fail',
-        message: response.message,
-      });
-      newResponse.code(response.statusCode);
-      return newResponse;
-    }
+    if (response instanceof Error) {
+      // Penanganan client error secara internal
+      if (response instanceof ClientError) {
+        const newResponse = h.response({
+          status: 'fail',
+          message: response.message,
+        });
+        newResponse.code(response.statusCode);
+        return newResponse;
+      }
 
-    // Penanganan error lainnya (bukan ClientError)
-    if (response.isBoom) {
+      // mempertahankan penanganan client error oleh hapi secara native, seperti 404, etc.
+      if (!response.isServer) {
+        return h.continue;
+      }
+
+      // penanganan server error sesuai kebutuhan
+      console.error(response);
       const newResponse = h.response({
         status: 'error',
-        message: 'Terjadi kesalahan pada server',
+        message: 'terjadi kegagalan pada server kami',
       });
-      newResponse.code(response.output.statusCode);
+      newResponse.code(500);
       return newResponse;
     }
 
-    // Melanjutkan response tanpa modifikasi jika tidak ada error
+    // jika bukan error, lanjutkan dengan response sebelumnya (tanpa terintervensi)
     return h.continue;
   });
 
   await server.start();
   console.log(`Server berjalan pada ${server.info.uri}`);
 };
+
+// Untuk menangani unhandled promise rejection
+process.on('unhandledRejection', (err) => {
+  console.error(err);
+  process.exit(1);
+});
 
 init();
