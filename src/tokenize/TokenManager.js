@@ -1,6 +1,6 @@
 const Jwt = require('@hapi/jwt');
 const process = require('process');
-const InvariantError = require('../exceptions/InvariantError');
+const AuthenticationError = require('../exceptions/AuthenticationError');
 
 const TokenManager = {
   generateAccessToken: (payload) =>
@@ -17,7 +17,7 @@ const TokenManager = {
       return payload;
       // eslint-disable-next-line no-unused-vars
     } catch (error) {
-      throw new InvariantError('Refresh token tidak valid');
+      throw new AuthenticationError('Refresh token tidak valid');
     }
   },
 };
