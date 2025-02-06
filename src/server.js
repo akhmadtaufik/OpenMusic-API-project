@@ -81,54 +81,69 @@ const init = async () => {
   server.ext('onPreResponse', (request, h) => {
     const { response } = request;
 
-    if (response instanceof Error) {
-      // Handle internal client errors
-      if (response instanceof ClientError) {
-        const newResponse = h.response({
-          status: 'fail',
-          message: response.message,
-        });
-        newResponse.code(response.statusCode);
-        return newResponse;
-      }
-
-      // Handle authentication errors
-      if (response instanceof AuthenticationError) {
-        const newResponse = h.response({
-          status: 'fail',
-          message: response.message,
-        });
-        newResponse.code(401);
-        return newResponse;
-      }
-
-      // Handle forbidden errors
-      if (response instanceof ForbiddenError) {
-        const newResponse = h.response({
-          status: 'fail',
-          message: response.message,
-        });
-        newResponse.code(403);
-        return newResponse;
-      }
-
-      // Maintain native hapi client error handling, such as 404, etc
-      if (!response.isServer) {
-        return h.continue;
-      }
-
-      // Handle server errors according to needs
-      const newResponse = h.response({
-        status: 'error',
-        message: 'Terjadi kegagalan pada server kami',
-      });
-      newResponse.code(500);
-      console.error(response);
-      return newResponse;
+    // Jika bukan error, lanjutkan response normal
+    if (!response.isBoom && !(response instanceof Error)) {
+      return h.continue;
     }
 
-    // If not an error, continue with previous response (without intervention)
-    return h.continue;
+    // 1. Handle 400 Bad Request
+    if (response instanceof ClientError) {
+      return h
+        .response({
+          status: 'fail',
+          message: response.message,
+        })
+        .code(response.statusCode);
+    }
+
+    // 2. Handle 401 Unauthorized
+    if (response instanceof AuthenticationError) {
+      return h
+        .response({
+          status: 'fail',
+          message: response.message,
+        })
+        .code(401);
+    }
+
+    // 3. Handle 403 Forbidden
+    if (response instanceof ForbiddenError) {
+      return h
+        .response({
+          status: 'fail',
+          message: response.message,
+        })
+        .code(403);
+    }
+
+    // 4. Handle 404 Not Found
+    if (response.output?.statusCode === 404) {
+      return h
+        .response({
+          status: 'fail',
+          message: 'Resource tidak ditemukan',
+        })
+        .code(404);
+    }
+
+    // 5. Handle native Hapi client errors
+    if (!response.isServer) {
+      return h
+        .response({
+          status: 'fail',
+          message: response.message || 'Bad Request',
+        })
+        .code(response.output.statusCode);
+    }
+
+    // 6. Handle 500 Server Error
+    console.error(response);
+    return h
+      .response({
+        status: 'error',
+        message: 'Terjadi kegagalan pada server kami',
+      })
+      .code(500);
   });
 
   await server.start();
