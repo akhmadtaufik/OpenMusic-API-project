@@ -17,14 +17,22 @@ const users = require('./api/users');
 const UsersService = require('./service/UsersService');
 const UsersValidator = require('./validator/users');
 
+// Authentications
+const authentications = require('./api/authentications');
+const AuthenticationsService = require('./service/AuthenticationsService');
+const TokenManager = require('./tokenize/TokenManager');
+const AuthenticationsValidator = require('./validator/authentications');
+
 // Exceptions
 const ClientError = require('./exceptions/ClientError');
 const AuthenticationError = require('./exceptions/AuthenticationError');
+const ForbiddenError = require('./exceptions/ForbiddenError');
 
 const init = async () => {
+  const authenticationsService = new AuthenticationsService();
+  const usersService = new UsersService();
   const albumsService = new AlbumsService();
   const songsService = new SongsService();
-  const usersService = new UsersService();
 
   const server = Hapi.server({
     port: process.env.PORT || 3000,
@@ -37,6 +45,15 @@ const init = async () => {
   });
 
   await server.register([
+    {
+      plugin: authentications,
+      options: {
+        authenticationsService,
+        usersService,
+        tokenManager: TokenManager,
+        validator: AuthenticationsValidator,
+      },
+    },
     {
       plugin: albums,
       options: {
@@ -60,12 +77,12 @@ const init = async () => {
     },
   ]);
 
-  // Error handling dengan onPreResponse
+  // Error handling with onPreResponse
   server.ext('onPreResponse', (request, h) => {
     const { response } = request;
 
     if (response instanceof Error) {
-      // Penanganan client error secara internal
+      // Handle internal client errors
       if (response instanceof ClientError) {
         const newResponse = h.response({
           status: 'fail',
@@ -85,30 +102,40 @@ const init = async () => {
         return newResponse;
       }
 
-      // mempertahankan penanganan client error oleh hapi secara native, seperti 404, etc.
+      // Handle forbidden errors
+      if (response instanceof ForbiddenError) {
+        const newResponse = h.response({
+          status: 'fail',
+          message: response.message,
+        });
+        newResponse.code(403);
+        return newResponse;
+      }
+
+      // Maintain native hapi client error handling, such as 404, etc
       if (!response.isServer) {
         return h.continue;
       }
 
-      // penanganan server error sesuai kebutuhan
-      console.error(response);
+      // Handle server errors according to needs
       const newResponse = h.response({
         status: 'error',
-        message: 'terjadi kegagalan pada server kami',
+        message: 'Terjadi kegagalan pada server kami',
       });
       newResponse.code(500);
+      console.error(response);
       return newResponse;
     }
 
-    // jika bukan error, lanjutkan dengan response sebelumnya (tanpa terintervensi)
+    // If not an error, continue with previous response (without intervention)
     return h.continue;
   });
 
   await server.start();
-  console.log(`Server berjalan pada ${server.info.uri}`);
+  console.log(`Server running on ${server.info.uri}`);
 };
 
-// Untuk menangani unhandled promise rejection
+// Handle unhandled promise rejection
 process.on('unhandledRejection', (err) => {
   console.error(err);
   process.exit(1);
