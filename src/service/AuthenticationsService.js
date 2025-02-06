@@ -1,5 +1,7 @@
+/* eslint-disable no-unused-vars */
 const { Pool } = require('pg');
 const InvariantError = require('../exceptions/InvariantError');
+const AuthenticationError = require('../exceptions/AuthenticationError');
 
 class AuthenticationsService {
   constructor() {
@@ -11,7 +13,12 @@ class AuthenticationsService {
       text: 'INSERT INTO authentications VALUES($1)',
       values: [token],
     };
-    await this._pool.query(query);
+
+    try {
+      await this._pool.query(query);
+    } catch (error) {
+      throw new InvariantError('Refresh token gagal ditambahkan');
+    }
   }
 
   async verifyRefreshToken(token) {
