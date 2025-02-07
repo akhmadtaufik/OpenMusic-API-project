@@ -4,8 +4,9 @@ const InvariantError = require('../exceptions/InvariantError');
 const NotFoundError = require('../exceptions/NotFoundError');
 
 class PlaylistsService {
-  constructor() {
+  constructor(collaborationsService) {
     this._pool = new Pool();
+    this._collaborationsService = collaborationsService;
   }
 
   async addPlaylist({ name, owner }) {
@@ -26,13 +27,12 @@ class PlaylistsService {
   async getPlaylists(owner) {
     const query = {
       text: `
-        SELECT playlists.id, playlists.name, users.username 
+        SELECT playlists.id, playlists.name, users.username
         FROM playlists
         LEFT JOIN users ON playlists.owner = users.id
-        WHERE playlists.owner = $1 
-        OR playlists.id IN (
-          SELECT playlist_id FROM collaborations WHERE user_id = $1
-        )
+        LEFT JOIN collaborations ON collaborations.playlist_id = playlists.id
+        WHERE playlists.owner = $1 OR collaborations.user_id = $1
+        GROUP BY playlists.id, users.username
       `,
       values: [owner],
     };
@@ -57,14 +57,20 @@ class PlaylistsService {
   async verifyPlaylistAccess(playlistId, userId) {
     // Owner Check
     const query = {
-      text: 'SELECT owner FROM playlists WHERE id = $1',
+      text: 'SELECT * FROM playlists WHERE id = $1',
       values: [playlistId],
     };
     const result = await this._pool.query(query);
 
-    if (result.rows[0].owner === userId) return;
+    if (!result.rows.length) {
+      throw new NotFoundError('Playlist tidak ditemukan');
+    }
+
+    const playlis = result.rows[0];
+    if (playlis.owner === userId) return;
 
     // Collaboration Check
+    await this._collaborationsService.verifyCollaborator(playlistId, userId);
   }
 
   async addSongToPlaylist(playlistId, songId) {
