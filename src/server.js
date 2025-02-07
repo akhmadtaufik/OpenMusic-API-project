@@ -29,6 +29,11 @@ const playlists = require('./api/playlists');
 const PlaylistsService = require('./service/PlaylistsService');
 const PlaylistsValidator = require('./validator/playlists');
 
+// Collaborations
+const collaborations = require('./api/collaborations');
+const CollaborationsService = require('./service/CollaborationsService');
+const CollaborationsValidator = require('./validator/collaborations');
+
 // Exceptions
 const ClientError = require('./exceptions/ClientError');
 const AuthenticationError = require('./exceptions/AuthenticationError');
@@ -39,7 +44,8 @@ const init = async () => {
   const usersService = new UsersService();
   const albumsService = new AlbumsService();
   const songsService = new SongsService();
-  const playlistsService = new PlaylistsService();
+  const collaborationsService = new CollaborationsService();
+  const playlistsService = new PlaylistsService(collaborationsService);
 
   const server = Hapi.server({
     port: process.env.PORT || 3000,
@@ -113,6 +119,14 @@ const init = async () => {
         validator: PlaylistsValidator,
       },
     },
+    {
+      plugin: collaborations,
+      options: {
+        collaborationsService,
+        playlistsService,
+        validator: CollaborationsValidator,
+      },
+    },
   ]);
 
   // Error handling with onPreResponse
@@ -162,6 +176,17 @@ const init = async () => {
           message: 'Resource tidak ditemukan',
         })
         .code(404);
+    }
+
+    // Handle 400 Bad Request (e.g., duplicate entry)
+    if (response.code === '23505') {
+      // Error code untuk unique violation
+      return h
+        .response({
+          status: 'fail',
+          message: 'Lagu sudah ada di playlist',
+        })
+        .code(400);
     }
 
     // 5. Handle native Hapi client errors
