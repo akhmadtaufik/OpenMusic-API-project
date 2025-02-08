@@ -130,6 +130,7 @@ const init = async () => {
       options: {
         collaborationsService,
         playlistsService,
+        usersService,
         validator: CollaborationsValidator,
       },
     },
@@ -193,6 +194,15 @@ const init = async () => {
           message: 'Lagu sudah ada di playlist',
         })
         .code(400);
+    }
+
+    if (response.code === '23503') {
+      return h
+        .response({
+          status: 'fail',
+          message: 'User tidak ditemukan',
+        })
+        .code(404);
     }
 
     // 5. Handle native Hapi client errors

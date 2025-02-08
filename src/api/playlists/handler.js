@@ -113,7 +113,7 @@ class PlaylistsHandler {
     await this._songsService.getSongById(songId);
 
     // Verify playlist access
-    await this._playlistsService.verifyPlaylistAccess(playlistId, credentialId);
+    await this._playlistsService.verifyPlaylistOwner(playlistId, credentialId);
 
     // Delete song
     await this._playlistsService.deleteSongFromPlaylist(
