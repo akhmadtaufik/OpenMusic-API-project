@@ -71,7 +71,11 @@ class PlaylistsHandler {
     await this._playlistsService.verifyPlaylistAccess(playlistId, credentialId);
 
     // add song
-    await this._playlistsService.addSongToPlaylist(playlistId, songId);
+    await this._playlistsService.addSongToPlaylist(
+      playlistId,
+      songId,
+      credentialId
+    );
 
     return h
       .response({
@@ -98,7 +102,7 @@ class PlaylistsHandler {
     };
   }
 
-  async deleteSongFromPlaylistHandler(request, h) {
+  async deleteSongFromPlaylistHandler(request) {
     this._validator.validatePostPlaylistSongPayload(request.payload);
 
     const { songId } = request.payload;
@@ -112,12 +116,16 @@ class PlaylistsHandler {
     await this._playlistsService.verifyPlaylistAccess(playlistId, credentialId);
 
     // Delete song
-    await this._playlistsService.deleteSongFromPlaylist(playlistId, songId);
+    await this._playlistsService.deleteSongFromPlaylist(
+      playlistId,
+      songId,
+      credentialId
+    );
 
-    return h.response({
+    return {
       status: 'success',
       message: 'Lagu berhasil dihapus dari playlist',
-    });
+    };
   }
 
   async getPlaylistActivitiesHandler(request) {
