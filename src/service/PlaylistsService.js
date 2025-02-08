@@ -74,21 +74,22 @@ class PlaylistsService {
   }
 
   async verifyPlaylistAccess(playlistId, userId) {
-    try {
-      await this.verifyPlaylistOwner(playlistId, userId);
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        throw error;
-      }
-      try {
-        await this._collaborationsService.verifyCollaborator(
-          playlistId,
-          userId
-        );
-      } catch {
-        throw error;
-      }
+    // Owner Check
+    const query = {
+      text: 'SELECT * FROM playlists WHERE id = $1',
+      values: [playlistId],
+    };
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('Playlist tidak ditemukan');
     }
+
+    const playlist = result.rows[0];
+    if (playlist.owner === userId) return;
+
+    // Collaboration Check
+    await this._collaborationsService.verifyCollaborator(playlistId, userId);
   }
 
   async addSongToPlaylist(playlistId, songId, userId) {
