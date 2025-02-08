@@ -196,11 +196,17 @@ const init = async () => {
         .code(400);
     }
 
+    // Handle Foreign Key Violation (user/playlist tidak ada)
     if (response.code === '23503') {
+      const detail = response.detail || '';
+      let message = 'Relasi tidak valid';
+      if (detail.includes('user_id')) message = 'User tidak ditemukan';
+      if (detail.includes('playlist_id')) message = 'Playlist tidak ditemukan';
+
       return h
         .response({
           status: 'fail',
-          message: 'User tidak ditemukan',
+          message,
         })
         .code(404);
     }
