@@ -4,9 +4,10 @@ const InvariantError = require('../exceptions/InvariantError');
 const NotFoundError = require('../exceptions/NotFoundError');
 
 class PlaylistsService {
-  constructor(collaborationsService) {
+  constructor(collaborationsService, playlistActivitiesService) {
     this._pool = new Pool();
     this._collaborationsService = collaborationsService;
+    this._playlistActivitiesService = playlistActivitiesService;
   }
 
   async addPlaylist({ name, owner }) {
@@ -73,7 +74,7 @@ class PlaylistsService {
     await this._collaborationsService.verifyCollaborator(playlistId, userId);
   }
 
-  async addSongToPlaylist(playlistId, songId) {
+  async addSongToPlaylist(playlistId, songId, credentialId) {
     const id = `playlist-song-${nanoid(16)}`;
     const query = {
       text: 'INSERT INTO playlist_songs (id, playlist_id, song_id) VALUES($1, $2, $3) RETURNING id',
@@ -84,6 +85,13 @@ class PlaylistsService {
     if (!result.rows[0].id) {
       throw new InvariantError('Lagu gagal ditambahkan ke playist');
     }
+
+    await this._playlistActivitiesService.addActivity(
+      playlistId,
+      songId,
+      credentialId,
+      'add'
+    );
   }
 
   async getSongsFromPlaylist(playlistId) {
@@ -117,7 +125,7 @@ class PlaylistsService {
     };
   }
 
-  async deleteSongFromPlaylist(playlistId, songId) {
+  async deleteSongFromPlaylist(playlistId, songId, credentialId) {
     const query = {
       text: 'DELETE FROM playlist_songs WHERE playlist_id = $1 AND song_id = $2 RETURNING id',
       values: [playlistId, songId],
@@ -127,6 +135,13 @@ class PlaylistsService {
     if (!result.rows.length) {
       throw new NotFoundError('Lagu tidak dutemukan di playlist');
     }
+
+    await this._playlistActivitiesService.addActivity(
+      playlistId,
+      songId,
+      credentialId,
+      'delete'
+    );
   }
 }
 
