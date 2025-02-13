@@ -7,6 +7,7 @@ services:
     working_dir: /usr/src/app
     volumes:
       - .:/usr/src/app
+      - /usr/src/app/node_modules
     ports:
       - '${PORT}:${PORT}'
     environment:
@@ -16,11 +17,18 @@ services:
       PGPORT: '${PGPORT}'
       PGDATABASE: '${PGDATABASE}'
     depends_on:
-      - database
+      - postgres-db
+      - rabbitmq
     command: >
-      sh -c "npm install && npm run migrate:up && npm run start"
+      sh -c "
+        sleep 10 &&
+        npm ci &&
+        npm run migrate:up &&
+        npm run start-dev"
+    networks:
+      - app-network
 
-  database:
+  postgres-db:
     image: postgres:15.10
     container_name: postgres-db
     restart: always
@@ -32,6 +40,33 @@ services:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - '5432:5432'
+    networks:
+      - app-network
+    command:
+      ['postgres', '-c', 'log_statement=all', '-c', 'log_destination=stderr']
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    restart: always
+    user: rabbitmq
+    ports:
+      - '${RABBITMQ_PORT}:${RABBITMQ_PORT}'
+      - '${RABBITMQ_MANAGEMENT_UI_PORT}:${RABBITMQ_MANAGEMENT_UI_PORT}'
+    environment:
+      RABBITMQ_DEFAULT_USER: '${RABBITMQ_USERNAME}'
+      RABBITMQ_DEFAULT_PASS: '${RABBITMQ_PASSWORD}'
+      RABBITMQ_ERLANG_COOKIE: '${RABBITMQ_ERLANG_COOKIE}'
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq:rw
+    networks:
+      - app-network
 
 volumes:
   postgres-data:
+  rabbitmq-data:
+
+networks:
+  app-network:
+    driver: bridge
