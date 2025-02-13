@@ -35,6 +35,13 @@ const collaborations = require('./api/collaborations');
 const CollaborationsService = require('./service/CollaborationsService');
 const CollaborationsValidator = require('./validator/collaborations');
 
+// Message Broker
+const exportsAPI = require('./api/exports');
+const ProducerService = require('./service/rabbitmq/ProducerService');
+const MailSender = require('./service/rabbitmq/MailSender');
+const ConsumerService = require('./service/rabbitmq/ConsumerService');
+const ExportsValidator = require('./validator/exports');
+
 // Exceptions
 const ClientError = require('./exceptions/ClientError');
 const AuthenticationError = require('./exceptions/AuthenticationError');
@@ -51,6 +58,11 @@ const init = async () => {
     collaborationsService,
     playlistActivitiesService
   );
+  const producerService = new ProducerService();
+  const mailSender = new MailSender();
+  const consumerService = new ConsumerService(playlistsService, mailSender);
+
+  consumerService.consume('export:playlists').catch(console.error);
 
   const server = Hapi.server({
     port: process.env.PORT || 3000,
@@ -132,6 +144,14 @@ const init = async () => {
         playlistsService,
         usersService,
         validator: CollaborationsValidator,
+      },
+    },
+    {
+      plugin: exportsAPI,
+      options: {
+        producerService,
+        playlistsService,
+        validator: ExportsValidator,
       },
     },
   ]);
