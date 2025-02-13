@@ -1,7 +1,5 @@
 const amqp = require('amqplib');
 const process = require('process');
-// const MailSender = require('./MailSender');
-// const PlaylistsService = require('../PlaylistsService');
 
 class ConsumerService {
   constructor(playlistsService, mailSender) {
