@@ -42,6 +42,11 @@ const MailSender = require('./service/rabbitmq/MailSender');
 const ConsumerService = require('./service/rabbitmq/ConsumerService');
 const ExportsValidator = require('./validator/exports');
 
+// Uploads
+const uploads = require('./api/uploads');
+const StorageService = require('./service/minio/StorageService');
+const UploadsValidator = require('./validator/uploads');
+
 // Exceptions
 const ClientError = require('./exceptions/ClientError');
 const AuthenticationError = require('./exceptions/AuthenticationError');
@@ -61,6 +66,7 @@ const init = async () => {
   const producerService = new ProducerService();
   const mailSender = new MailSender();
   const consumerService = new ConsumerService(playlistsService, mailSender);
+  const storageService = new StorageService();
 
   consumerService.consume('export:playlists').catch(console.error);
 
@@ -154,6 +160,14 @@ const init = async () => {
         validator: ExportsValidator,
       },
     },
+    {
+      plugin: uploads,
+      options: {
+        albumsService: albumsService,
+        storageService: storageService,
+        validator: UploadsValidator,
+      },
+    },
   ]);
 
   // Error handling with onPreResponse
@@ -205,7 +219,7 @@ const init = async () => {
         .code(404);
     }
 
-    // Handle 400 Bad Request (e.g., duplicate entry)
+    // 5. Handle 400 Bad Request (e.g., duplicate entry)
     if (response.code === '23505') {
       // Error code untuk unique violation
       return h
@@ -216,7 +230,7 @@ const init = async () => {
         .code(400);
     }
 
-    // Handle Foreign Key Violation (user/playlist tidak ada)
+    // 6. Handle Foreign Key Violation (user/playlist tidak ada)
     if (response.code === '23503') {
       const detail = response.detail || '';
       let message = 'Relasi tidak valid';
@@ -229,6 +243,29 @@ const init = async () => {
           message,
         })
         .code(404);
+    }
+
+    // 7. Handle error payload too large (413)
+    if (response.output?.statusCode === 413) {
+      return h
+        .response({
+          status: 'fail',
+          message: 'Ukuran cover melebihi batas 512KB',
+        })
+        .code(413);
+    }
+
+    // 8. Handle error validasi cover (400)
+    if (
+      response.message === 'Format cover tidak valid' ||
+      response.message === 'Ukuran cover melebihi batas 512KB'
+    ) {
+      return h
+        .response({
+          status: 'fail',
+          message: response.message,
+        })
+        .code(400);
     }
 
     // 5. Handle native Hapi client errors
