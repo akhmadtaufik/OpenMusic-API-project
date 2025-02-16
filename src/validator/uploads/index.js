@@ -2,10 +2,11 @@ const { UploadCoverSchema } = require('./schema');
 const InvariantError = require('../../exceptions/InvariantError');
 
 const UploadsValidator = {
-  validateUploadCoverPayload: (payload) => {
-    const validationResult = UploadCoverSchema.validate(payload);
+  validateCoverHeaders: (headers) => {
+    const validationResult = UploadCoverSchema.validate(headers);
+
     if (validationResult.error) {
-      throw new InvariantError(validationResult.error.message);
+      throw new InvariantError('Format cover tidak valid');
     }
   },
 };
