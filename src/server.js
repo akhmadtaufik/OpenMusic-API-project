@@ -1,6 +1,7 @@
 require('dotenv').config();
 const Hapi = require('@hapi/hapi');
 const Jwt = require('@hapi/jwt');
+const Inert = require('@hapi/inert');
 const process = require('process');
 
 // Albums
@@ -84,6 +85,9 @@ const init = async () => {
     {
       plugin: Jwt,
     },
+    {
+      plugin: Inert,
+    },
   ]);
 
   // Define JWT authentication strategy
@@ -163,8 +167,8 @@ const init = async () => {
     {
       plugin: uploads,
       options: {
-        albumsService: albumsService,
-        storageService: storageService,
+        albumsService,
+        storageService,
         validator: UploadsValidator,
       },
     },
@@ -255,20 +259,17 @@ const init = async () => {
         .code(413);
     }
 
-    // 8. Handle error validasi cover (400)
-    if (
-      response.message === 'Format cover tidak valid' ||
-      response.message === 'Ukuran cover melebihi batas 512KB'
-    ) {
+    // 8. Handle Hapi's native 415 (Unsupported Media Type)
+    if (response.output?.statusCode === 415) {
       return h
         .response({
           status: 'fail',
-          message: response.message,
+          message: 'Format cover tidak valid',
         })
         .code(400);
     }
 
-    // 5. Handle native Hapi client errors
+    // 9. Handle native Hapi client errors
     if (!response.isServer) {
       return h
         .response({
