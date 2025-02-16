@@ -45,10 +45,10 @@ class AlbumsService {
     const songsResult = await this._pool.query(songsQuery);
     const mappedAlbum = mapAlbumDBToModel(albumResult);
 
-    // Return dengan songs array kosong jika tidak ada lagu
     return {
       ...mappedAlbum,
-      songs: songsResult.rows || [],
+      coverUrl: albumResult.cover_url || null,
+      songs: songsResult.rows,
     };
   }
 
@@ -76,15 +76,15 @@ class AlbumsService {
     }
   }
 
-  async addCoverUrl(albumId, coverUrl) {
+  async addCoverUrl(id, coverUrl) {
     const query = {
       text: 'UPDATE albums SET cover_url = $1 WHERE id = $2 RETURNING id',
-      values: [coverUrl, albumId],
+      values: [coverUrl, id],
     };
 
     const result = await this._pool.query(query);
 
-    if (!result.rowCount) {
+    if (!result.rows.length) {
       throw new NotFoundError('Album tidak ditemukan');
     }
   }
