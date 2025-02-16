@@ -7,10 +7,9 @@ const routes = (handler) => [
       payload: {
         allow: 'multipart/form-data',
         multipart: true,
-        maxBytes: 512000,
         output: 'stream',
+        maxBytes: 512000,
       },
-      auth: 'openmusic_jwt',
     },
   },
 ];
