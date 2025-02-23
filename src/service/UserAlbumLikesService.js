@@ -4,8 +4,9 @@ const InvariantError = require('../exceptions/InvariantError');
 const NotFoundError = require('../exceptions/NotFoundError');
 
 class UserAlbumLikesService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = new Pool();
+    this._cacheService = cacheService;
   }
 
   async addLike(userId, albumId) {
@@ -31,6 +32,8 @@ class UserAlbumLikesService {
     if (!result.rows[0].id) {
       throw new InvariantError('Gagal menyukai album');
     }
+
+    await this.deleteCache(albumId);
   }
 
   async deleteLike(userId, albumId) {
@@ -43,16 +46,34 @@ class UserAlbumLikesService {
     if (!result.rows.length) {
       throw new NotFoundError('Like tidak ditemukan');
     }
+
+    await this.deleteCache(albumId);
   }
 
   async getLikesCount(albumId) {
-    const query = {
-      text: 'SELECT COUNT(*) FROM user_album_likes WHERE album_id = $1',
-      values: [albumId],
-    };
+    try {
+      const cached = await this._cacheService.get(`likes:${albumId}`);
+      if (cached !== null) {
+        return { cached: true, count: cached };
+      }
 
-    const result = await this._pool.query(query);
-    return parseInt(result.rows[0].count, 10);
+      const query = {
+        text: 'SELECT COUNT(*) FROM user_album_likes WHERE album_id = $1',
+        values: [albumId],
+      };
+
+      const result = await this._pool.query(query);
+      const count = parseInt(result.rows[0].count, 10);
+
+      await this._cacheService.set(`likes:${albumId}`, count);
+
+      return { cached: false, count };
+    } catch (error) {
+      console.error('Cache operation failed:', error);
+      // Fallback to database
+      const result = await this._pool.query(query);
+      return { cached: false, count: parseInt(result.rows[0].count, 10) };
+    }
   }
 
   async verifyLikeExist(userId, albumId) {
@@ -74,6 +95,14 @@ class UserAlbumLikesService {
     const result = await this._pool.query(query);
     if (!result.rows.length) {
       throw new NotFoundError('Album tidak ditemukan');
+    }
+  }
+
+  async deleteCache(albumId) {
+    try {
+      await this._cacheService.delete(`likes:${albumId}`);
+    } catch (error) {
+      console.error('Failed to delete cache:', error);
     }
   }
 }
