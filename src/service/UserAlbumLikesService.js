@@ -71,6 +71,10 @@ class UserAlbumLikesService {
     } catch (error) {
       console.error('Cache operation failed:', error);
       // Fallback to database
+      const query = {
+        text: 'SELECT COUNT(*) FROM user_album_likes WHERE album_id = $1',
+        values: [albumId],
+      };
       const result = await this._pool.query(query);
       return { cached: false, count: parseInt(result.rows[0].count, 10) };
     }
