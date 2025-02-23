@@ -16,9 +16,11 @@ services:
       PGHOST: '${PGHOST}'
       PGPORT: '${PGPORT}'
       PGDATABASE: '${PGDATABASE}'
+      REDIS_SERVER: '${REDIS_SERVER}'
     depends_on:
       - postgres-db
       - rabbitmq
+      - redis
     command: >
       sh -c "
         sleep 10 &&
@@ -78,10 +80,23 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    command: redis-server --save 60 1 --loglevel warning
+
 volumes:
   postgres-data:
   rabbitmq-data:
   minio-data:
+  redis-data:
 
 networks:
   app-network:
