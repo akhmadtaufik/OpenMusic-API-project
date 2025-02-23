@@ -1,5 +1,5 @@
-/* eslint-disable no-undef */
 const Jwt = require('@hapi/jwt');
+const process = require('process');
 const InvariantError = require('../exceptions/InvariantError');
 
 const TokenManager = {
@@ -30,7 +30,6 @@ const TokenManager = {
       Jwt.token.verifySignature(artifacts, process.env.REFRESH_TOKEN_KEY);
       const { payload } = artifacts.decoded;
       return payload;
-      // eslint-disable-next-line no-unused-vars
     } catch (error) {
       throw new InvariantError('Invalid refresh token');
     }
