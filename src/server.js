@@ -48,6 +48,11 @@ const uploads = require('./api/uploads');
 const StorageService = require('./service/minio/StorageService');
 const UploadsValidator = require('./validator/uploads');
 
+// Likes
+const likes = require('./api/likes');
+const UserAlbumLikesService = require('./service/UserAlbumLikesService');
+const LikesValidator = require('./validator/likes');
+
 // Exceptions
 const ClientError = require('./exceptions/ClientError');
 const AuthenticationError = require('./exceptions/AuthenticationError');
@@ -68,6 +73,7 @@ const init = async () => {
   const mailSender = new MailSender();
   const consumerService = new ConsumerService(playlistsService, mailSender);
   const storageService = new StorageService();
+  const userAlbumLikesService = new UserAlbumLikesService();
 
   consumerService.consume('export:playlists').catch(console.error);
 
@@ -170,6 +176,13 @@ const init = async () => {
         albumsService,
         storageService,
         validator: UploadsValidator,
+      },
+    },
+    {
+      plugin: likes,
+      options: {
+        likesService: userAlbumLikesService,
+        validator: LikesValidator,
       },
     },
   ]);
@@ -279,7 +292,7 @@ const init = async () => {
         .code(response.output.statusCode);
     }
 
-    // 6. Handle 500 Server Error
+    // 10. Handle 500 Server Error
     console.error(response);
     return h
       .response({
