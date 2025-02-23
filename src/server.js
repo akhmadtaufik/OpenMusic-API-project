@@ -53,6 +53,9 @@ const likes = require('./api/likes');
 const UserAlbumLikesService = require('./service/UserAlbumLikesService');
 const LikesValidator = require('./validator/likes');
 
+// Cache
+const CacheService = require('./service/redis/CacheService');
+
 // Exceptions
 const ClientError = require('./exceptions/ClientError');
 const AuthenticationError = require('./exceptions/AuthenticationError');
@@ -73,7 +76,8 @@ const init = async () => {
   const mailSender = new MailSender();
   const consumerService = new ConsumerService(playlistsService, mailSender);
   const storageService = new StorageService();
-  const userAlbumLikesService = new UserAlbumLikesService();
+  const cacheService = new CacheService();
+  const userAlbumLikesService = new UserAlbumLikesService(cacheService);
 
   consumerService.consume('export:playlists').catch(console.error);
 
