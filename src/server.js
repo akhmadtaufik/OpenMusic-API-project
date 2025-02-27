@@ -1,66 +1,64 @@
-require('dotenv').config();
-const Hapi = require('@hapi/hapi');
-const Jwt = require('@hapi/jwt');
-const Inert = require('@hapi/inert');
-const process = require('process');
+require("dotenv").config();
+const Hapi = require("@hapi/hapi");
+const Jwt = require("@hapi/jwt");
+const Inert = require("@hapi/inert");
+const process = require("process");
 
 // Albums
-const albums = require('./api/albums');
-const AlbumsService = require('./service/AlbumsService');
-const AlbumsValidator = require('./validator/albums');
+const albums = require("./api/albums");
+const AlbumsService = require("./service/AlbumsService");
+const AlbumsValidator = require("./validator/albums");
 
 // Songs
-const songs = require('./api/songs');
-const SongsService = require('./service/SongsService');
-const SongsValidator = require('./validator/songs');
+const songs = require("./api/songs");
+const SongsService = require("./service/SongsService");
+const SongsValidator = require("./validator/songs");
 
 // Users
-const users = require('./api/users');
-const UsersService = require('./service/UsersService');
-const UsersValidator = require('./validator/users');
+const users = require("./api/users");
+const UsersService = require("./service/UsersService");
+const UsersValidator = require("./validator/users");
 
 // Authentications
-const authentications = require('./api/authentications');
-const AuthenticationsService = require('./service/AuthenticationsService');
-const TokenManager = require('./tokenize/TokenManager');
-const AuthenticationsValidator = require('./validator/authentications');
+const authentications = require("./api/authentications");
+const AuthenticationsService = require("./service/AuthenticationsService");
+const TokenManager = require("./tokenize/TokenManager");
+const AuthenticationsValidator = require("./validator/authentications");
 
 // Playlist
-const playlists = require('./api/playlists');
-const PlaylistsService = require('./service/PlaylistsService');
-const PlaylistActivitiesService = require('./service/PlaylistActivitiesService');
-const PlaylistsValidator = require('./validator/playlists');
+const playlists = require("./api/playlists");
+const PlaylistsService = require("./service/PlaylistsService");
+const PlaylistActivitiesService = require("./service/PlaylistActivitiesService");
+const PlaylistsValidator = require("./validator/playlists");
 
 // Collaborations
-const collaborations = require('./api/collaborations');
-const CollaborationsService = require('./service/CollaborationsService');
-const CollaborationsValidator = require('./validator/collaborations');
+const collaborations = require("./api/collaborations");
+const CollaborationsService = require("./service/CollaborationsService");
+const CollaborationsValidator = require("./validator/collaborations");
 
 // Message Broker
-const exportsAPI = require('./api/exports');
-const ProducerService = require('./service/rabbitmq/ProducerService');
-const MailSender = require('./service/rabbitmq/MailSender');
-const ConsumerService = require('./service/rabbitmq/ConsumerService');
-const ExportsValidator = require('./validator/exports');
+const exportsAPI = require("./api/exports");
+const ProducerService = require("./service/rabbitmq/ProducerService");
+const ExportsValidator = require("./validator/exports");
 
 // Uploads
-const uploads = require('./api/uploads');
-// const StorageService = require('./service/minio/StorageService');
-const StorageService = require('./service/S3/StorageService');
-const UploadsValidator = require('./validator/uploads');
+const uploads = require("./api/uploads");
+const StorageService = require("./service/minio/StorageService");
+// const StorageService = require("./service/S3/StorageService");
+const UploadsValidator = require("./validator/uploads");
 
 // Likes
-const likes = require('./api/likes');
-const UserAlbumLikesService = require('./service/UserAlbumLikesService');
-const LikesValidator = require('./validator/likes');
+const likes = require("./api/likes");
+const UserAlbumLikesService = require("./service/UserAlbumLikesService");
+const LikesValidator = require("./validator/likes");
 
 // Cache
-const CacheService = require('./service/redis/CacheService');
+const CacheService = require("./service/redis/CacheService");
 
 // Exceptions
-const ClientError = require('./exceptions/ClientError');
-const AuthenticationError = require('./exceptions/AuthenticationError');
-const ForbiddenError = require('./exceptions/ForbiddenError');
+const ClientError = require("./exceptions/ClientError");
+const AuthenticationError = require("./exceptions/AuthenticationError");
+const ForbiddenError = require("./exceptions/ForbiddenError");
 
 const init = async () => {
   const authenticationsService = new AuthenticationsService();
@@ -74,20 +72,16 @@ const init = async () => {
     playlistActivitiesService
   );
   const producerService = new ProducerService();
-  const mailSender = new MailSender();
-  const consumerService = new ConsumerService(playlistsService, mailSender);
   const storageService = new StorageService();
   const cacheService = new CacheService();
   const userAlbumLikesService = new UserAlbumLikesService(cacheService);
 
-  consumerService.consume('export:playlists').catch(console.error);
-
   const server = Hapi.server({
     port: process.env.PORT || 3000,
-    host: process.env.HOST || 'localhost',
+    host: process.env.HOST || "localhost",
     routes: {
       cors: {
-        origin: ['*'],
+        origin: ["*"],
       },
     },
   });
@@ -102,7 +96,7 @@ const init = async () => {
   ]);
 
   // Define JWT authentication strategy
-  server.auth.strategy('openmusic_jwt', 'jwt', {
+  server.auth.strategy("openmusic_jwt", "jwt", {
     keys: process.env.ACCESS_TOKEN_KEY,
     verify: {
       aud: false,
@@ -193,7 +187,7 @@ const init = async () => {
   ]);
 
   // Error handling with onPreResponse
-  server.ext('onPreResponse', (request, h) => {
+  server.ext("onPreResponse", (request, h) => {
     const { response } = request;
 
     // Jika bukan error, lanjutkan response normal
@@ -205,7 +199,7 @@ const init = async () => {
     if (response instanceof ClientError) {
       return h
         .response({
-          status: 'fail',
+          status: "fail",
           message: response.message,
         })
         .code(response.statusCode);
@@ -215,7 +209,7 @@ const init = async () => {
     if (response instanceof AuthenticationError) {
       return h
         .response({
-          status: 'fail',
+          status: "fail",
           message: response.message,
         })
         .code(401);
@@ -225,7 +219,7 @@ const init = async () => {
     if (response instanceof ForbiddenError) {
       return h
         .response({
-          status: 'fail',
+          status: "fail",
           message: response.message,
         })
         .code(403);
@@ -235,33 +229,33 @@ const init = async () => {
     if (response.output?.statusCode === 404) {
       return h
         .response({
-          status: 'fail',
-          message: 'Resource tidak ditemukan',
+          status: "fail",
+          message: "Resource tidak ditemukan",
         })
         .code(404);
     }
 
-    // 5. Handle 400 Bad Request (e.g., duplicate entry)
-    if (response.code === '23505') {
+    // 5. Handle 400 Bad Request
+    if (response.code === "23505") {
       // Error code untuk unique violation
       return h
         .response({
-          status: 'fail',
-          message: 'Lagu sudah ada di playlist',
+          status: "fail",
+          message: "Lagu sudah ada di playlist",
         })
         .code(400);
     }
 
     // 6. Handle Foreign Key Violation (user/playlist tidak ada)
-    if (response.code === '23503') {
-      const detail = response.detail || '';
-      let message = 'Relasi tidak valid';
-      if (detail.includes('user_id')) message = 'User tidak ditemukan';
-      if (detail.includes('playlist_id')) message = 'Playlist tidak ditemukan';
+    if (response.code === "23503") {
+      const detail = response.detail || "";
+      let message = "Relasi tidak valid";
+      if (detail.includes("user_id")) message = "User tidak ditemukan";
+      if (detail.includes("playlist_id")) message = "Playlist tidak ditemukan";
 
       return h
         .response({
-          status: 'fail',
+          status: "fail",
           message,
         })
         .code(404);
@@ -271,8 +265,8 @@ const init = async () => {
     if (response.output?.statusCode === 413) {
       return h
         .response({
-          status: 'fail',
-          message: 'Ukuran cover melebihi batas 512KB',
+          status: "fail",
+          message: "Ukuran cover melebihi batas 512KB",
         })
         .code(413);
     }
@@ -281,8 +275,8 @@ const init = async () => {
     if (response.output?.statusCode === 415) {
       return h
         .response({
-          status: 'fail',
-          message: 'Format cover tidak valid',
+          status: "fail",
+          message: "Format cover tidak valid",
         })
         .code(400);
     }
@@ -291,8 +285,8 @@ const init = async () => {
     if (!response.isServer) {
       return h
         .response({
-          status: 'fail',
-          message: response.message || 'Bad Request',
+          status: "fail",
+          message: response.message || "Bad Request",
         })
         .code(response.output.statusCode);
     }
@@ -301,8 +295,8 @@ const init = async () => {
     console.error(response);
     return h
       .response({
-        status: 'error',
-        message: 'Terjadi kegagalan pada server kami',
+        status: "error",
+        message: "Terjadi kegagalan pada server kami",
       })
       .code(500);
   });
@@ -312,7 +306,7 @@ const init = async () => {
 };
 
 // Handle unhandled promise rejection
-process.on('unhandledRejection', (err) => {
+process.on("unhandledRejection", (err) => {
   console.error(err);
   process.exit(1);
 });
