@@ -45,7 +45,8 @@ const ExportsValidator = require('./validator/exports');
 
 // Uploads
 const uploads = require('./api/uploads');
-const StorageService = require('./service/minio/StorageService');
+// const StorageService = require('./service/minio/StorageService');
+const StorageService = require('./service/S3/StorageService');
 const UploadsValidator = require('./validator/uploads');
 
 // Likes
