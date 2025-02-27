@@ -1,5 +1,6 @@
-const amqp = require('amqplib');
-const process = require('process');
+const amqp = require("amqplib");
+const process = require("process");
+const { Buffer } = require("buffer");
 
 class ProducerService {
   async sendMessage(queue, message) {
