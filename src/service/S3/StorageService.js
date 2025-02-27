@@ -1,10 +1,10 @@
 const {
   S3Client,
-  PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { Upload } = require('@aws-sdk/lib-storage');
 const process = require('process');
 
 class StorageService {
@@ -23,24 +23,28 @@ class StorageService {
   async uploadCover(file, meta) {
     const filename = `cover-${meta.albumId}-${Date.now()}.${meta.ext}`;
 
-    // Upload file to S3
-    const putCommand = new PutObjectCommand({
-      Bucket: this._bucketName,
-      Key: filename,
-      Body: file,
-      ContentType: meta.headers['content-type'],
+    // Upload
+    const upload = new Upload({
+      client: this._client,
+      params: {
+        Bucket: this._bucketName,
+        Key: filename,
+        Body: file,
+        ContentType: meta.headers['content-type'],
+      },
     });
 
-    await this._client.send(putCommand);
+    // Execute the upload
+    await upload.done();
 
-    // Generate presigned URL for acess file
+    // Generate presigned URL for accessing file
     const getCommand = new GetObjectCommand({
       Bucket: this._bucketName,
       Key: filename,
     });
 
     return await getSignedUrl(this._client, getCommand, {
-      expiresIn: process.env.S3_URL_EXPIRATIO || 604800,
+      expiresIn: process.env.S3_URL_EXPIRATION || 604800,
     });
   }
 
