@@ -1,4 +1,4 @@
-const autoBind = require('auto-bind');
+const autoBind = require("auto-bind");
 
 class ExportsHandler {
   constructor(producerService, playlistsService, validator) {
@@ -23,12 +23,12 @@ class ExportsHandler {
     const message = { playlistId, targetEmail };
 
     // Send to rabbitmq
-    await this._producerService.sendMessage('export:playlists', message);
+    await this._producerService.sendMessage("export:playlists", message);
 
     return h
       .response({
-        status: 'success',
-        message: 'Permintaan Anda sedang kami proses',
+        status: "success",
+        message: "Permintaan Anda sedang kami proses",
       })
       .code(201);
   }
