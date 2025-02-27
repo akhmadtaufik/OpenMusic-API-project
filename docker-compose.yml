@@ -23,10 +23,10 @@ services:
       - redis
     command: >
       sh -c "
-        sleep 10 &&
+        sleep 60 &&
         npm ci &&
         npm run migrate:up &&
-        npm run start-dev"
+        npm run start"
     networks:
       - app-network
 
