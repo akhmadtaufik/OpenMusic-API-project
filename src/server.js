@@ -281,7 +281,18 @@ const init = async () => {
         .code(400);
     }
 
-    // 9. Handle native Hapi client errors
+    // 9. Handle error Redis
+    if (response.message && response.message.includes("Redis")) {
+      console.error("Redis error:", response);
+      return h
+        .response({
+          status: "fail",
+          message: "Terjadi masalah pada cache, tetapi operasi utama berhasil",
+        })
+        .code(207);
+    }
+
+    // 10. Handle native Hapi client errors
     if (!response.isServer) {
       return h
         .response({
@@ -291,7 +302,7 @@ const init = async () => {
         .code(response.output.statusCode);
     }
 
-    // 10. Handle 500 Server Error
+    // 11. Handle 500 Server Error
     console.error(response);
     return h
       .response({
