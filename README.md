@@ -65,7 +65,7 @@ The OpenMusic API is a RESTful web service designed to manage a music library. I
     PGUSER=your_pg_user
     PGPASSWORD=your_pg_password
     PGDATABASE=openmusicdb
-    PGPORT=5432
+    PGPORT=your_port
 
     # JWT Configuration
     ACCESS_TOKEN_KEY=your_super_secret_access_token_key
@@ -77,7 +77,7 @@ The OpenMusic API is a RESTful web service designed to manage a music library. I
     RABBITMQ_SERVER=amqp://guest:guest@localhost:5672/
 
     # Redis Configuration
-    REDIS_SERVER=localhost # Port 6379 is often hardcoded or default
+    REDIS_SERVER=localhost 
 
     # AWS S3 Configuration
     AWS_REGION=your_s3_bucket_region
@@ -148,30 +148,30 @@ The following environment variables are required or commonly used by the applica
 | Variable                      | Description                                                          | Example Value                              |
 | :---------------------------- | :------------------------------------------------------------------- | :----------------------------------------- |
 | `HOST`                        | Hostname for the server                                              | `localhost`                                |
-| `PORT`                        | Port for the server                                                  | `5000`                                     |
+| `PORT`                        | Port for the server                                                  | `your_port`                                     |
 | `PGHOST`                      | PostgreSQL host                                                      | `localhost`                                |
 | `PGUSER`                      | PostgreSQL username                                                  | `postgres`                                 |
 | `PGPASSWORD`                  | PostgreSQL password                                                  | `secret`                                   |
-| `PGDATABASE`                  | PostgreSQL database name                                             | `openmusicdb`                              |
-| `PGPORT`                      | PostgreSQL port                                                      | `5432`                                     |
+| `PGDATABASE`                  | PostgreSQL database name                                             | `your_dbname`                              |
+| `PGPORT`                      | PostgreSQL port                                                      | `your_port`                                     |
 | `ACCESS_TOKEN_KEY`            | Secret key for signing JWT access tokens                             | `your_very_strong_access_key`              |
 | `REFRESH_TOKEN_KEY`           | Secret key for signing JWT refresh tokens                            | `your_very_strong_refresh_key`             |
 | `ACCESS_TOKEN_AGE`            | Access token expiration time in seconds                              | `1800` (for 30 minutes)                    |
 | `REFRESH_TOKEN_AGE`           | Refresh token expiration time in seconds (optional)                  | `604800` (for 7 days)                      |
-| `RABBITMQ_SERVER`             | RabbitMQ connection string                                           | `amqp://guest:guest@localhost`             |
+| `RABBITMQ_SERVER`             | RabbitMQ connection string                                           | `your_connection`             |
 | `REDIS_SERVER`                | Redis server hostname                                                | `localhost`                                |
 | `AWS_REGION`                  | AWS S3 bucket region                                                 | `us-east-1`                                |
 | `AWS_ACCESS_KEY_ID`           | AWS IAM user access key ID for S3                                    | `AKIAIOSFODNN7EXAMPLE`                     |
 | `AWS_SECRET_ACCESS_KEY`       | AWS IAM user secret access key for S3                                | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` |
-| `AWS_BUCKET_NAME`             | Name of the AWS S3 bucket for storing covers                         | `my-openmusic-covers-bucket`               |
+| `AWS_BUCKET_NAME`             | Name of the AWS S3 bucket for storing covers                         | `your_bucket_name`               |
 | `S3_URL_EXPIRATION`           | Presigned URL expiration in seconds (optional)                       | `604800` (for 7 days)                      |
-| `RABBITMQ_PORT`               | RabbitMQ AMQP port (for Docker Compose)                              | `5672`                                     |
-| `RABBITMQ_MANAGEMENT_UI_PORT` | RabbitMQ Management UI port (for Docker Compose)                     | `15672`                                    |
+| `RABBITMQ_PORT`               | RabbitMQ AMQP port (for Docker Compose)                              | `your_port`                                     |
+| `RABBITMQ_MANAGEMENT_UI_PORT` | RabbitMQ Management UI port (for Docker Compose)                     | `your_port`                                    |
 | `RABBITMQ_USERNAME`           | RabbitMQ default username (for Docker Compose)                       | `guest`                                    |
 | `RABBITMQ_PASSWORD`           | RabbitMQ default password (for Docker Compose)                       | `guest`                                    |
 | `RABBITMQ_ERLANG_COOKIE`      | RabbitMQ Erlang cookie (for Docker Compose clustering)               | `your_strong_random_erlang_cookie`         |
-| `MINIO_ACCESS_KEY`            | Minio Root User (Access Key for S3 compatible storage in Docker)     | `minioadmin`                               |
-| `MINIO_SECRET_KEY`            | Minio Root Password (Secret Key for S3 compatible storage in Docker) | `minioadmin`                               |
+| `MINIO_ACCESS_KEY`            | Minio Root User (Access Key for S3 compatible storage in Docker)     | `your_access_key`                               |
+| `MINIO_SECRET_KEY`            | Minio Root Password (Secret Key for S3 compatible storage in Docker) | `your_secret_key`                               |
 
 ## 6. Testing
 
@@ -206,17 +206,16 @@ This project includes a `Dockerfile` and a `docker-compose.yml` file to facilita
 
 1. **Ensure `.env` file is configured:**
     Create or update your `.env` file in the project root. For Docker Compose, some variables need to point to service names defined in `docker-compose.yml` or use values specific to the Docker environment. Pay special attention to:
-    * `PORT`: Should match the port exposed by the `app` service in `docker-compose.yml` (e.g., `5000`).
+    * `PORT`: Should match the port exposed by the `app` service in `docker-compose.yml`.
     * `PGHOST`: Set to the PostgreSQL service name, e.g., `postgres-db`.
     * `PGUSER`, `PGPASSWORD`, `PGDATABASE`: Must match the `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` values for the `postgres-db` service.
-    * `RABBITMQ_SERVER`: Set to `amqp://<RABBITMQ_USERNAME>:<RABBITMQ_PASSWORD>@rabbitmq:<RABBITMQ_PORT_INTERNAL_OR_DEFAULT>` (e.g., `amqp://guest:guest@rabbitmq:5672` if using default RabbitMQ user/pass and internal port).
+    * `RABBITMQ_SERVER`: Set to `amqp://<RABBITMQ_USERNAME>:<RABBITMQ_PASSWORD>@rabbitmq:<RABBITMQ_PORT_INTERNAL_OR_DEFAULT>`
     * `REDIS_SERVER`: Set to the Redis service name, e.g., `redis`.
     * For Minio (local S3 alternative):
         * `AWS_REGION`: Can be a placeholder like `us-east-1`.
         * `AWS_ACCESS_KEY_ID`: Set to your `MINIO_ACCESS_KEY` from `.env`.
         * `AWS_SECRET_ACCESS_KEY`: Set to your `MINIO_SECRET_KEY` from `.env`.
         * `AWS_BUCKET_NAME`: The bucket you want Minio to use/create.
-        * You'll also need to configure the S3 client in `src/service/S3/StorageService.js` to use `endpoint: 'http://minio:9000'` and `forcePathStyle: true` if it's not already set up for Minio compatibility when running in Docker. *(This part might require code adjustment if not already flexible)*.
 
     Refer to the `docker-compose.yml` file for service names and environment variable usage.
 
